@@ -5,3 +5,12 @@ api-version: '1.21'
 authors: [ Xzai ]
 description: 鸡刷插件
 website: https://xzai.cloud
+
+commands:
+  dupe:
+    description: PigeonChickenDupe 主命令
+    usage: |
+      /dupe - 查看个人信息
+      /dupe exeadd <玩家名> - [控制台] 添加高级用户白名单
+      /dupe vipadd <玩家名> <每天次数> - [控制台] 添加VIP
+      /dupe vipdel <玩家名> - [控制台] 移除VIP
