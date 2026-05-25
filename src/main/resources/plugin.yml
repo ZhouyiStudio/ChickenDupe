@@ -1,6 +1,6 @@
 name: ChickenDupe
 version: '${version}'
-main: network.chickendupe.ChickenDupe
+main: com.zhouyi.mc3d3k.Dupe
 api-version: '1.21'
 authors: [ Xzai ]
 description: 鸡刷插件 — ChickenDupe
