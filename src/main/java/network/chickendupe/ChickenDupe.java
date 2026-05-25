@@ -1,4 +1,4 @@
-package network.pigeon;
+package network.chickendupe;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -12,7 +12,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Chicken;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 
-public final class PigeonChickenDupe extends JavaPlugin implements Listener {
+public final class ChickenDupe extends JavaPlugin implements Listener {
 
     // ==================== 数据文件 ====================
     private File dataFile;
@@ -39,7 +38,7 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
     private final Set<String> exeAddSet = ConcurrentHashMap.newKeySet();
     private final Map<String, Integer> vipMap = new ConcurrentHashMap<>();
 
-    // ==================== 配置缓存（避免每 tick 读文件）====================
+    // ==================== 配置缓存 ====================
     private int spawnInterval;
     private int spawnNumber;
     private int defaultDailyLimit;
@@ -60,7 +59,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             this.used = used;
         }
 
-        /** 跨天自动重置 */
         void resetIfNewDay() {
             String today = LocalDate.now().toString();
             if (!today.equals(date)) {
@@ -69,7 +67,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             }
         }
 
-        /** 是否还能使用（limit < 0 表示无限） */
         boolean canUse(int limit) {
             resetIfNewDay();
             return limit < 0 || used < limit;
@@ -84,59 +81,65 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // 1. 配置
         saveDefaultConfig();
         reloadConfig();
         loadConfigCache();
 
-        // 2. 数据文件
         dataFile = new File(getDataFolder(), "data.yml");
         loadData();
 
-        // 3. 事件
         getServer().getPluginManager().registerEvents(this, this);
-
-        // 4. 命令
         Objects.requireNonNull(getCommand("dupe")).setExecutor(new DupeCommandExecutor());
 
-        // 5. 线程池
         workers = Executors.newFixedThreadPool(2);
 
-        // 6. 定时刷物品
         spawnTaskId = getServer().getScheduler()
                 .scheduleSyncRepeatingTask(this, this::spawnItemsForChickens, 0L, intervalTicks);
 
-        // 7. 定时保存数据（每 5 分钟）
         saveTaskId = getServer().getScheduler()
                 .scheduleSyncRepeatingTask(this, this::saveData, 6000L, 6000L);
 
-        // 8. 启动信息
-        getLogger().info(ChatColor.GREEN + "--------------------");
-        getLogger().info(ChatColor.GREEN + "PigeonChickenDupe");
-        getLogger().info(ChatColor.GREEN + "插件加载成功");
-        getLogger().info(ChatColor.GREEN + "by Zhouyi QQ 823672854 github https://github.com/ZhouyiStudio/ChickenDupe");
-        getLogger().info(ChatColor.GREEN + "--------------------");
+        // ★ 美化启动输出
+        printBanner(true);
     }
 
     @Override
     public void onDisable() {
         getServer().getScheduler().cancelTask(spawnTaskId);
         getServer().getScheduler().cancelTask(saveTaskId);
-        saveData();    // 最后一次持久化
+        saveData();
         workers.shutdown();
-        getLogger().info(ChatColor.GREEN + "--------------------");
-        getLogger().info(ChatColor.GREEN + "PigeonChickenDupe");
-        getLogger().info(ChatColor.GREEN + "插件卸载成功");
-        getLogger().info(ChatColor.GREEN + "--------------------");
+        printBanner(false);
     }
 
-    // ==================== 配置 / 数据 加载与持久化 ====================
+    /** 启动/卸载横幅 */
+    private void printBanner(boolean enable) {
+        String title = ChatColor.GOLD + "ChickenDupe" + ChatColor.WHITE + " v" + getDescription().getVersion();
+        String status = enable ? ChatColor.GREEN + "✓ 加载成功！" : ChatColor.RED + "✕ 已卸载";
+        String line  = ChatColor.AQUA + "╔══════════════════════════════════════╗";
+        String sep   = ChatColor.AQUA + "║" + ChatColor.WHITE + "                                      " + ChatColor.AQUA + "║";
+        String blank = ChatColor.AQUA + "║" + "                                        " + ChatColor.AQUA + "║";
+
+        getLogger().info("");
+        getLogger().info(line);
+        getLogger().info(ChatColor.AQUA + "║        " + title + "          " + ChatColor.AQUA + "║");
+        getLogger().info(sep);
+        getLogger().info(ChatColor.AQUA + "║         " + status + "          " + ChatColor.AQUA + "║");
+        getLogger().info(sep);
+        getLogger().info(ChatColor.AQUA + "║  " + ChatColor.GRAY + "by Zhouyi" + "                          " + ChatColor.AQUA + "║");
+        getLogger().info(ChatColor.AQUA + "║  " + ChatColor.GRAY + "QQ: " + ChatColor.WHITE + "823672854" + "                    " + ChatColor.AQUA + "║");
+        getLogger().info(ChatColor.AQUA + "║  " + ChatColor.GRAY + "github.com/ZhouyiStudio/ChickenDupe" + "  " + ChatColor.AQUA + "║");
+        getLogger().info(ChatColor.AQUA + "╚══════════════════════════════════════╝");
+        getLogger().info("");
+    }
+
+    // ==================== 配置 / 数据 ====================
 
     private void loadConfigCache() {
-        spawnInterval = getConfig().getInt("SpawnInterval", 60);
-        spawnNumber   = getConfig().getInt("SpawnNumber", 1);
+        spawnInterval     = getConfig().getInt("SpawnInterval", 60);
+        spawnNumber       = getConfig().getInt("SpawnNumber", 1);
         defaultDailyLimit = getConfig().getInt("DailyLimit", 50);
-        intervalTicks = spawnInterval * 20L;
+        intervalTicks     = spawnInterval * 20L;
     }
 
     @SuppressWarnings("CallToPrintStackTrace")
@@ -151,7 +154,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
         }
         dataCache = YamlConfiguration.loadConfiguration(dataFile);
 
-        // 清空内存缓存，从文件重新加载
         exeAddSet.clear();
         exeAddSet.addAll(dataCache.getStringList("exeadd"));
 
@@ -170,30 +172,22 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
                 int used    = dataCache.getInt(path + ".used", 0);
                 try {
                     playerDataCache.put(UUID.fromString(uuidStr), new PlayerData(date, used));
-                } catch (IllegalArgumentException ignored) {
-                    // 忽略损坏的 UUID 条目
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
         }
     }
 
     private void saveData() {
-        // 将内存数据写回 dataCache
         dataCache.set("exeadd", new ArrayList<>(exeAddSet));
-
-        // VIP
         for (Map.Entry<String, Integer> e : vipMap.entrySet()) {
             dataCache.set("vips." + e.getKey(), e.getValue());
         }
-
-        // 玩家使用统计
         for (Map.Entry<UUID, PlayerData> e : playerDataCache.entrySet()) {
             String path = "players." + e.getKey().toString();
             PlayerData pd = e.getValue();
             dataCache.set(path + ".date", pd.date);
             dataCache.set(path + ".used", pd.used);
         }
-
         try {
             dataCache.save(dataFile);
         } catch (IOException ex) {
@@ -207,15 +201,13 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
         @Override
         public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
             if (args.length == 0) {
-                // /dupe  → 显示个人信息
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ChatColor.RED + "控制台请使用 /dupe <exeadd|vipadd|vipdel> 子命令");
+                    sender.sendMessage(ChatColor.RED + "控制台请使用 /dupe <exeadd|vipadd|vipdel>");
                     return true;
                 }
                 showPlayerInfo(player);
                 return true;
             }
-
             return switch (args[0].toLowerCase()) {
                 case "exeadd" -> handleExeAdd(sender, args);
                 case "vipadd" -> handleVipAdd(sender, args);
@@ -228,12 +220,10 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
         }
     }
 
-    /** 展示玩家自己的信息 */
     private void showPlayerInfo(Player player) {
         UUID uuid = player.getUniqueId();
         String name = player.getName();
 
-        // 等级
         String level;
         if (exeAddSet.contains(name)) {
             level = ChatColor.RED + "管理员";
@@ -243,14 +233,13 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             level = ChatColor.GRAY + "普通";
         }
 
-        // 使用数据
         PlayerData pd = playerDataCache.computeIfAbsent(uuid,
                 k -> new PlayerData(LocalDate.now().toString(), 0));
         pd.resetIfNewDay();
 
         int max;
         if (exeAddSet.contains(name)) {
-            max = -1;               // 无限
+            max = -1;
         } else if (vipMap.containsKey(name)) {
             max = vipMap.get(name);
         } else {
@@ -259,15 +248,16 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
 
         String maxStr = (max < 0) ? "∞" : String.valueOf(max);
 
-        player.sendMessage(ChatColor.GREEN + "===== PigeonChickenDupe =====");
-        player.sendMessage(ChatColor.WHITE + "用户名: " + ChatColor.YELLOW + name);
-        player.sendMessage(ChatColor.WHITE + "等级: " + level);
-        player.sendMessage(ChatColor.WHITE + "已使用 / 共次数: " + ChatColor.AQUA + pd.used
-                + ChatColor.WHITE + " / " + ChatColor.AQUA + maxStr);
-        player.sendMessage(ChatColor.GREEN + "=============================");
+        player.sendMessage(ChatColor.AQUA + "╔══════════════════════════╗");
+        player.sendMessage(ChatColor.AQUA + "║    " + ChatColor.GOLD + " ChickenDupe " + ChatColor.AQUA + "        ║");
+        player.sendMessage(ChatColor.AQUA + "╠══════════════════════════╣");
+        player.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + " 玩家: " + ChatColor.YELLOW + name + ChatColor.AQUA + "            ║");
+        player.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + " 等级: " + level + ChatColor.AQUA + "              ║");
+        player.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + " 使用: " + ChatColor.AQUA + pd.used
+                + ChatColor.WHITE + " / " + ChatColor.AQUA + maxStr + ChatColor.AQUA + "           ║");
+        player.sendMessage(ChatColor.AQUA + "╚══════════════════════════╝");
     }
 
-    /** /dupe exeadd <玩家名>  — 仅控制台 */
     private boolean handleExeAdd(CommandSender sender, String[] args) {
         if (!(sender instanceof ConsoleCommandSender)) {
             sender.sendMessage(ChatColor.RED + "该命令仅限控制台执行！");
@@ -277,14 +267,12 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             sender.sendMessage(ChatColor.RED + "用法: /dupe exeadd <玩家名>");
             return true;
         }
-        String target = args[1];
-        exeAddSet.add(target);
+        exeAddSet.add(args[1]);
         saveData();
-        sender.sendMessage(ChatColor.GREEN + "已将 " + target + " 添加到高级用户白名单！");
+        sender.sendMessage(ChatColor.GREEN + "已将 " + args[1] + " 添加到高级用户白名单！");
         return true;
     }
 
-    /** /dupe vipadd <玩家名> <每天次数>  — 仅控制台 */
     private boolean handleVipAdd(CommandSender sender, String[] args) {
         if (!(sender instanceof ConsoleCommandSender)) {
             sender.sendMessage(ChatColor.RED + "该命令仅限控制台执行！");
@@ -294,7 +282,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             sender.sendMessage(ChatColor.RED + "用法: /dupe vipadd <玩家名> <每天次数>");
             return true;
         }
-        String target = args[1];
         int count;
         try {
             count = Integer.parseInt(args[2]);
@@ -306,14 +293,13 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             sender.sendMessage(ChatColor.RED + "次数必须大于 0 或为 -1（无限）！");
             return true;
         }
-        vipMap.put(target, count);
+        vipMap.put(args[1], count);
         saveData();
         String display = (count < 0) ? "无限" : String.valueOf(count);
-        sender.sendMessage(ChatColor.GREEN + "已将 " + target + " 添加到 VIP 列表，每天可 " + display + " 次！");
+        sender.sendMessage(ChatColor.GREEN + "已将 " + args[1] + " 添加到 VIP 列表，每天可 " + display + " 次！");
         return true;
     }
 
-    /** /dupe vipdel <玩家名>  — 仅控制台 */
     private boolean handleVipDel(CommandSender sender, String[] args) {
         if (!(sender instanceof ConsoleCommandSender)) {
             sender.sendMessage(ChatColor.RED + "该命令仅限控制台执行！");
@@ -323,21 +309,17 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             sender.sendMessage(ChatColor.RED + "用法: /dupe vipdel <玩家名>");
             return true;
         }
-        String target = args[1];
-        if (vipMap.remove(target) != null) {
+        if (vipMap.remove(args[1]) != null) {
             saveData();
-            sender.sendMessage(ChatColor.GREEN + "已将 " + target + " 从 VIP 列表中移除！");
+            sender.sendMessage(ChatColor.GREEN + "已将 " + args[1] + " 从 VIP 列表中移除！");
         } else {
-            sender.sendMessage(ChatColor.RED + target + " 不在 VIP 列表中！");
+            sender.sendMessage(ChatColor.RED + args[1] + " 不在 VIP 列表中！");
         }
         return true;
     }
 
     // ==================== 事件监听 ====================
 
-    /**
-     * 玩家右键鸡 → 记录物品 + 扣除当日次数
-     */
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof Chicken chicken)) return;
@@ -350,13 +332,12 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
         String playerName = player.getName();
         UUID playerUuid  = player.getUniqueId();
 
-        // === 每日次数检查 ===
         PlayerData pd = playerDataCache.computeIfAbsent(playerUuid,
                 k -> new PlayerData(LocalDate.now().toString(), 0));
 
         int limit;
         if (exeAddSet.contains(playerName)) {
-            limit = -1;  // 管理员无限
+            limit = -1;
         } else if (vipMap.containsKey(playerName)) {
             limit = vipMap.get(playerName);
         } else {
@@ -370,11 +351,9 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             return;
         }
 
-        // === 记录物品到 data.yml ===
         pd.increment();
         String chickenUuid = chicken.getUniqueId().toString();
         workers.submit(() -> {
-            // 直接写入文件（异步，不阻塞主线程）
             YamlConfiguration temp = YamlConfiguration.loadConfiguration(dataFile);
             temp.set(chickenUuid, item);
             try {
@@ -384,7 +363,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             }
         });
 
-        // 反馈
         Location loc = chicken.getLocation();
         player.playSound(loc, Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
         chicken.setCustomName(ChatColor.GREEN + "[物品] " + ChatColor.GOLD + getItemDisplayName(item));
@@ -393,9 +371,6 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
                 + (limit < 0 ? "∞" : String.valueOf(limit - pd.used)));
     }
 
-    /**
-     * 鸡死亡 → 清除 data.yml 中的记录
-     */
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof Chicken chicken)) return;
@@ -405,13 +380,11 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
             temp.set(chickenUuid, null);
             try {
                 temp.save(dataFile);
-            } catch (IOException ignored) {
-                // 文件删除记录失败不影响游戏
-            }
+            } catch (IOException ignored) {}
         });
     }
 
-    // ==================== 刷物品任务 ====================
+    // ==================== 刷物品 ====================
 
     private void spawnItemsForChickens() {
         int amount = spawnNumber;
@@ -432,11 +405,8 @@ public final class PigeonChickenDupe extends JavaPlugin implements Listener {
         }
     }
 
-    // ==================== 工具方法 ====================
+    // ==================== 工具 ====================
 
-    /**
-     * 获取物品可读名称（兼容 1.21，Avoid getI18NDisplayName）
-     */
     private String getItemDisplayName(ItemStack item) {
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             return item.getItemMeta().getDisplayName();

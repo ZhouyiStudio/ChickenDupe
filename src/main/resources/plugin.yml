@@ -1,14 +1,14 @@
-name: PigeonChickenDupe
+name: ChickenDupe
 version: '${version}'
-main: network.pigeon.PigeonChickenDupe
+main: network.chickendupe.ChickenDupe
 api-version: '1.21'
 authors: [ Xzai ]
-description: 鸡刷插件
-website: https://xzai.cloud
+description: 鸡刷插件 — ChickenDupe
+website: https://github.com/ZhouyiStudio/ChickenDupe
 
 commands:
   dupe:
-    description: PigeonChickenDupe 主命令
+    description: ChickenDupe 主命令
     usage: |
       /dupe - 查看个人信息
       /dupe exeadd <玩家名> - [控制台] 添加高级用户白名单
