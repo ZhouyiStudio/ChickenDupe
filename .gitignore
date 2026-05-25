@@ -1,0 +1,29 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/
+!**/src/test/**/
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+out/
+
+### Eclipse ###
+.settings/
+.project
+.classpath
+bin/
+
+### VS Code ###
+.settings/
+.vscode/
+*.code-workspace
+
+### AtomCode ###
+.atomcode/
+
+### OS ###
+.DS_Store
+Thumbs.db
