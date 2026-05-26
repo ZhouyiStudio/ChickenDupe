@@ -214,11 +214,15 @@ public final class Dupe extends JavaPlugin implements Listener {
                 return true;
             }
             return switch (args[0].toLowerCase()) {
+                case "help", "?" -> {
+                    showHelp(sender);
+                    yield true;
+                }
                 case "exeadd" -> handleExeAdd(sender, args);
                 case "vipadd" -> handleVipAdd(sender, args);
                 case "vipdel" -> handleVipDel(sender, args);
                 default -> {
-                    sender.sendMessage(ChatColor.RED + "未知子命令，可用: exeadd, vipadd, vipdel");
+                    sender.sendMessage(ChatColor.RED + "未知子命令，可用: help, exeadd, vipadd, vipdel");
                     yield true;
                 }
             };
@@ -261,6 +265,35 @@ public final class Dupe extends JavaPlugin implements Listener {
         player.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + " 使用: " + ChatColor.AQUA + pd.used
                 + ChatColor.WHITE + " / " + ChatColor.AQUA + maxStr + ChatColor.AQUA + "           ║");
         player.sendMessage(ChatColor.AQUA + "╚══════════════════════════╝");
+    }
+
+    private void showHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.AQUA + "╔══════════════════════════════════════════╗");
+        sender.sendMessage(ChatColor.AQUA + "║        " + ChatColor.GOLD + "ChickenDupe 使用帮助" + ChatColor.AQUA + "          ║");
+        sender.sendMessage(ChatColor.AQUA + "╠══════════════════════════════════════════╣");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "作者: " + ChatColor.YELLOW + "Zhouyi" + ChatColor.AQUA + "                        ║");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "QQ群: " + ChatColor.YELLOW + "813855404" + ChatColor.AQUA + "                     ║");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "GitHub: " + ChatColor.YELLOW + "github.com/ZhouyiStudio" + ChatColor.AQUA + "      ║");
+        sender.sendMessage(ChatColor.AQUA + "╠══════════════════════════════════════════╣");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.GREEN + "当前模式: " + ChatColor.GOLD + (dupeMode.equals("EGG") ? "下蛋(EGG)" : "杀鸡(KILL)") + ChatColor.AQUA + "    ║");
+        sender.sendMessage(ChatColor.AQUA + "╠══════════════════════════════════════════╣");
+
+        if ("EGG".equals(dupeMode)) {
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "1. 手持物品右键点击成年鸡绑定" + ChatColor.AQUA + "    ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "2. 鸡会每隔 " + ChatColor.YELLOW + spawnInterval + "秒" + ChatColor.WHITE + " 自动掉落物品" + ChatColor.AQUA + " ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "3. 每次掉落 " + ChatColor.YELLOW + spawnNumber + "个" + ChatColor.WHITE + " 绑定的物品" + ChatColor.AQUA + "    ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.GRAY + "   杀鸡不会掉落物品，但会清除绑定  " + ChatColor.AQUA + " ║");
+        } else {
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "1. 手持物品右键点击成年鸡绑定" + ChatColor.AQUA + "    ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "2. 杀死绑定的鸡即可掉落物品" + ChatColor.AQUA + "      ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.WHITE + "3. 每次掉落 " + ChatColor.YELLOW + spawnNumber + "个" + ChatColor.WHITE + " 绑定的物品" + ChatColor.AQUA + "    ║");
+            sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.GRAY + "   注意：鸡死亡后绑定自动清除  " + ChatColor.AQUA + "  ║");
+        }
+
+        sender.sendMessage(ChatColor.AQUA + "╠══════════════════════════════════════════╣");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.GREEN + "/dupe" + ChatColor.WHITE + " - 查看个人信息" + ChatColor.AQUA + "              ║");
+        sender.sendMessage(ChatColor.AQUA + "║ " + ChatColor.GREEN + "/dupe help" + ChatColor.WHITE + " - 显示此帮助" + ChatColor.AQUA + "          ║");
+        sender.sendMessage(ChatColor.AQUA + "╚══════════════════════════════════════════╝");
     }
 
     private boolean handleExeAdd(CommandSender sender, String[] args) {
