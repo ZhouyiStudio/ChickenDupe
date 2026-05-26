@@ -39,6 +39,7 @@ public final class Dupe extends JavaPlugin implements Listener {
     private final Map<String, Integer> vipMap = new ConcurrentHashMap<>();
 
     // ==================== 配置缓存 ====================
+    private String dupeMode;       // KILL / EGG
     private int spawnInterval;
     private int spawnNumber;
     private int defaultDailyLimit;
@@ -93,8 +94,11 @@ public final class Dupe extends JavaPlugin implements Listener {
 
         workers = Executors.newFixedThreadPool(2);
 
-        spawnTaskId = getServer().getScheduler()
-                .scheduleSyncRepeatingTask(this, this::spawnItemsForChickens, 0L, intervalTicks);
+        spawnTaskId = -1;
+        if ("EGG".equals(dupeMode)) {
+            spawnTaskId = getServer().getScheduler()
+                    .scheduleSyncRepeatingTask(this, this::spawnItemsForChickens, 0L, intervalTicks);
+        }
 
         saveTaskId = getServer().getScheduler()
                 .scheduleSyncRepeatingTask(this, this::saveData, 6000L, 6000L);
@@ -136,6 +140,7 @@ public final class Dupe extends JavaPlugin implements Listener {
     // ==================== 配置 / 数据 ====================
 
     private void loadConfigCache() {
+        dupeMode          = getConfig().getString("DupeMode", "KILL").toUpperCase();
         spawnInterval     = getConfig().getInt("SpawnInterval", 60);
         spawnNumber       = getConfig().getInt("SpawnNumber", 1);
         defaultDailyLimit = getConfig().getInt("DailyLimit", 50);
@@ -375,6 +380,18 @@ public final class Dupe extends JavaPlugin implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof Chicken chicken)) return;
         String chickenUuid = chicken.getUniqueId().toString();
+
+        if ("KILL".equals(dupeMode)) {
+            // 杀鸡模式：读取绑定物品，掉落，然后清除绑定
+            YamlConfiguration fileData = YamlConfiguration.loadConfiguration(dataFile);
+            ItemStack bound = fileData.getItemStack(chickenUuid);
+            if (bound != null) {
+                ItemStack drop = bound.clone();
+                drop.setAmount(Math.max(1, spawnNumber));
+                chicken.getWorld().dropItemNaturally(chicken.getLocation(), drop);
+            }
+        }
+
         workers.submit(() -> {
             YamlConfiguration temp = YamlConfiguration.loadConfiguration(dataFile);
             temp.set(chickenUuid, null);

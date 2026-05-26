@@ -1,4 +1,9 @@
-# 刷物品间隔（单位：秒）
+# 模式: KILL(杀鸡掉落) / EGG(定时下蛋)
+# KILL : 杀死绑定的鸡时掉落物品（默认）
+# EGG  : 鸡会定时自动掉落物品（需要设置 SpawnInterval）
+DupeMode: KILL
+
+# 刷物品间隔（单位：秒，仅 EGG 模式有效）
 # 太高会导致服务器卡顿
 SpawnInterval: 60
 
